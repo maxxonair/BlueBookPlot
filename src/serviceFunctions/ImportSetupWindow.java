@@ -21,7 +21,7 @@ import main.BlueBookPlot;
 public class ImportSetupWindow {
 
 	private static JFrame frame;
-	private static String PROJECT_TITLE = "Load Resultfile";
+	private static String PROJECT_TITLE = "File Delimiter";
 	private static int xInit = 300;
 	private static int yInit = 80;
 	

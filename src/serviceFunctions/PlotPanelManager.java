@@ -26,7 +26,7 @@ public class PlotPanelManager {
 		this.plotNumber = plotNumber;
 	}
 	
-	public JPanel createPlotPanel(List<String> variableList, String analysisFile) {
+	public JPanel createPlotPanel(List<String> variableList, List<String> analysisFile) {
 		
 		for(int i=0;i<4;i++) {
 			ChartSetting chartSetting = new ChartSetting();
@@ -49,7 +49,7 @@ public class PlotPanelManager {
 		
 	}
 	
-	private JPanel arrangePlots(JPanel plotPanel, List<String> variableList, String analysisFile, int plotNumber) {
+	private JPanel arrangePlots(JPanel plotPanel, List<String> variableList, List<String> analysisFile, int plotNumber) {
 		for(int i=0;i<plotElments.size();i++) {
 			try {
 				plotElments.remove(i);
@@ -182,7 +182,7 @@ public class PlotPanelManager {
 		return plotPanel;
 	}
 	
-	public void refresh(List<String> variableList, String analysisFile) {
+	public void refresh(List<String> variableList, List<String> analysisFile) {
 		// Delete all content from Plot Panel 
 		for(int i=0;i<plotPanelContent.size();i++) {
 			try {

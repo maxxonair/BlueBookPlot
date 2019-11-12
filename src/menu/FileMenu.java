@@ -8,10 +8,9 @@ import java.io.IOException;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.SwingUtilities;
 
 import main.BlueBookPlot;
-import serviceFunctions.ImportSetupWindow;
+import serviceFunctions.ResultFileSetWindow;
 
 public class FileMenu {
 
@@ -22,24 +21,21 @@ public class FileMenu {
         menuPoint.setBackground(BlueBookPlot.getBackgroundColor());
         menuPoint.setFont(BlueBookPlot.getSmallFont());
         menuPoint.setMnemonic(KeyEvent.VK_A);
-        
-        
-        JMenuItem itemSelectResult = new JMenuItem("Select ResultFile  "); 
-        itemSelectResult.setForeground(Color.black);
-        itemSelectResult.setFont(BlueBookPlot.getSmallFont());
-        menuPoint.add(itemSelectResult);
-        itemSelectResult.addActionListener(new ActionListener() {
+
+        JMenuItem itemResultFileSet = new JMenuItem("Manage Data Files  "); 
+        itemResultFileSet.setForeground(Color.black);
+        itemResultFileSet.setFont(BlueBookPlot.getSmallFont());
+      //  itemSelectVariableList.setAccelerator(KeyStroke.getKeyStroke(
+      //          KeyEvent.VK_A, ActionEvent.ALT_MASK));
+        menuPoint.add(itemResultFileSet);
+        itemResultFileSet.addActionListener(new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
-                	   
-                       SwingUtilities.invokeLater(new Runnable() {
-                           public void run() {
-                               try {
-               					ImportSetupWindow.createAndShowGUI();
-               				} catch (IOException  e) {System.out.println(e);}
-                           }
-                       });
-                	   
-                	   
+                	   try {
+						ResultFileSetWindow.createAndShowGUI();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
                     } });
         
         JMenuItem itemSelectVariableList = new JMenuItem("Select VariableList  "); 
@@ -52,6 +48,8 @@ public class FileMenu {
                    public void actionPerformed(ActionEvent e) {
                 	   BlueBookPlot.selectResultFile(itemSelectVariableList);
                     } });
+        
+
        return menuPoint;        
 	}
 }

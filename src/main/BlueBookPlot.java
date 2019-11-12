@@ -13,6 +13,7 @@ import java.awt.event.HierarchyEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,6 +31,7 @@ import menu.SidePanel;
 import serviceFunctions.FileWatcher;
 import serviceFunctions.BackgroundMenuBar;
 import serviceFunctions.PlotPanelManager;
+import serviceFunctions.ResultFileSetWindow;
 
 
 
@@ -43,13 +45,17 @@ public class BlueBookPlot {
     private static Color labelColor =  new Color(220,220,220);    
    	private static Color backgroundColor = new Color(41,41,41);
    	
-    private static String resultFilePath  = System.getProperty("user.dir") + "/results.txt"  ;
+    private static List<String> resultFilePath  = new ArrayList<String>()  ;
+    
+    private static String resultFileListPath = System.getProperty("user.dir") + "/dataSetList" ;
     
     private static String variableListPath  = System.getProperty("user.dir") + "/variableList"  ; 
     
     private static String iconFilePath  = System.getProperty("user.dir") + "/images/icon.png"  ; 
     
     private static String resultFileDelimiter=" ";
+    
+	private static Timer timer = new Timer();
     
     private static int plotNumber=1;
     private static PlotPanelManager plotPanelManager;
@@ -58,6 +64,13 @@ public class BlueBookPlot {
     
 	public static void createGUI() {
         plotPanelManager = new PlotPanelManager(1);
+
+        try {
+			resultFilePath = readResultFileList(resultFileListPath);
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		
         JFrame.setDefaultLookAndFeelDecorated(false);
         JFrame frame = new JFrame("" + PROJECT_TITLE);
@@ -108,16 +121,20 @@ public class BlueBookPlot {
          // ---------------------------------------------------------------------------------
          //       Define Task (FileWatcher) Update Result Overview
     	 	// ---------------------------------------------------------------------------------
-    	  @SuppressWarnings("unused")
-		FileWatcher task_Update = new FileWatcher( new File(resultFilePath) ) {
-    		    protected void onChange( File file ) {
-    		    	plotPanelManager.refresh(variableList, resultFilePath);
-    		    }
-    		  };
-        
-       	   Timer timer = new Timer();
-     	  // repeat the check every second
-     	   timer.schedule( task_Update , new Date(), 1000 );
+         for(int i=0;i<resultFilePath.size();i++) {
+		    	  try {
+				FileWatcher task_Update = new FileWatcher( new File(resultFilePath.get(i)) ) {
+		    		    protected void onChange( File file ) {
+		    		    	plotPanelManager.refresh(variableList, resultFilePath);
+		    		    }
+		    		  };
+		    	  
+		     	  // repeat the check every second
+		     	   timer.schedule( task_Update , new Date(), 1000 );
+		    	  } catch (Exception e) {
+		    		  System.err.println("ERROR: FileWatcher failed.");
+		    	  }
+         }
         //------------------------------------------------------------------
            setGUIColors(true);
            
@@ -147,6 +164,12 @@ public class BlueBookPlot {
         frame.setVisible(true);
 	}
 	
+	public static void setResultFilePath(List<String> resultFilePath) {
+		BlueBookPlot.resultFilePath = resultFilePath;
+		writeResultFileList();
+		updateTimer();
+	}
+
 	public static void main(String[] args) {
 	createGUI();	
 	}
@@ -167,13 +190,21 @@ public class BlueBookPlot {
     public static void selectResultFile(Component itemSelectResult) {
         File myfile = new File(System.getProperty("user.dir"));
         	JFileChooser fileChooser = new JFileChooser(myfile);
+        	fileChooser.setMultiSelectionEnabled(true);
        	if (fileChooser.showOpenDialog(itemSelectResult) == JFileChooser.APPROVE_OPTION) {
        		
-       		File file = fileChooser.getSelectedFile() ;
-       		resultFilePath = file.getAbsolutePath();
+       		//File file = fileChooser.getSelectedFile() ;
+       		File[] files = fileChooser.getSelectedFiles();
+       		for(int i=0;i<files.length;i++) {
+       		String path = files[i].getAbsolutePath();
+       		resultFilePath.add(path);
+       		}
        		plotPanelManager.refresh(variableList, resultFilePath);
+       		ResultFileSetWindow.UpdateTableFromResultFileList();
+       		updateTimer();
        	}
        	plotPanelManager.refresh(variableList, resultFilePath);
+       	writeResultFileList();
     }
     
     public static void selectVariableList(Component itemSelectVariableList) {
@@ -215,6 +246,69 @@ public class BlueBookPlot {
      return variableList;
     }
     
+    public static List<String> readResultFileList(String filePath) throws IOException{
+    	List<String> variableList = new ArrayList<String>();
+    	try {
+     	 BufferedReader br = new BufferedReader(new FileReader(filePath));
+      	 String strLine;
+    try { 
+   		      while ((strLine = br.readLine()) != null )   {
+   		    	  String after = strLine.trim().replaceAll(" +", " ");
+   		      	if(!after.isEmpty()) {
+   		      	variableList.add(after);
+   		      	}
+   		      }
+    }catch(NullPointerException eNPE) { System.out.println(eNPE);}
+    br.close();
+    if(variableList.size()==0) {
+   	 System.err.println("ERROR: Variable List empty. Return 0");
+    }
+    	} catch (Exception e) {
+    		
+    	}
+    return variableList;
+    }
+    
+    public static void updateTimer() {
+    	timer.cancel();
+    	timer.purge();
+        for(int i=0;i<resultFilePath.size();i++) {
+		    	  try {
+				FileWatcher task_Update = new FileWatcher( new File(resultFilePath.get(i)) ) {
+		    		    protected void onChange( File file ) {
+		    		    	plotPanelManager.refresh(variableList, resultFilePath);
+		    		    }
+		    		  };
+		    	  
+		     	  // repeat the check every second
+		     	   timer.schedule( task_Update , new Date(), 1000 );
+		    	  } catch (Exception e) {
+		    		  System.err.println("ERROR: FileWatcher failed.");
+		    	  }
+        }
+    }
+    
+    public static void writeResultFileList() {
+    	System.out.println("write res file list.");
+        try {
+            File fac = new File(resultFileListPath);
+            if (!fac.exists())
+            {
+                fac.createNewFile();
+            } else {
+            	fac.delete();
+            	fac.createNewFile();
+            }
+            FileWriter wr = new FileWriter(fac);
+
+	            for(String temp : resultFilePath) {
+	            		wr.write(temp+System.getProperty( "line.separator" ));
+	            }
+            wr.close();
+            } catch (IOException eIO) {
+            	System.out.println("ERROR: Result file list could not be created.");
+            }
+    }
 
     
     public static void setGUIColors(boolean value) {
@@ -245,7 +339,7 @@ public class BlueBookPlot {
 		return plotPanelManager;
 	}
 
-	public static String getResultFilePath() {
+	public static List<String> getResultFilePath() {
 		return resultFilePath;
 	}
 

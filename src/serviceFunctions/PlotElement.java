@@ -51,7 +51,7 @@ public class PlotElement {
     private JButton yAxisIndicator, xAxisIndicator;
     private VariableList variableListY, variableListX;
     
-    private String resultFile ; 
+    private List<String> resultFile = new ArrayList<String>(); 
     
     private XYSeriesCollection resultSet = new XYSeriesCollection();
     
@@ -63,7 +63,7 @@ public class PlotElement {
     
     private int ID;
     
-    public PlotElement(int ID, List<String> variableList, String analysisFile, ChartSetting chartSetting) {
+    public PlotElement(int ID, List<String> variableList, List<String> analysisFile, ChartSetting chartSetting) {
     	this.variableList = variableList;
     	this.resultFile = analysisFile;
     	this.chartSetting = chartSetting; 
@@ -104,6 +104,7 @@ public class PlotElement {
 	       yAxisIndicator.setForeground(BlueBookPlot.getLabelColor());
 	       yAxisIndicator.setOpaque(true);
 	       yAxisIndicator.setBorderPainted(false);
+	       try {
 	      TextIcon t1 = new TextIcon(yAxisIndicator, variableList.get(plotElement.getChartSetting().y), TextIcon.Layout.HORIZONTAL);
 	      RotatedIcon r1 = new RotatedIcon(t1, RotatedIcon.Rotate.UP);
 	      t1.setFont(BlueBookPlot.getSmallFont());
@@ -118,7 +119,9 @@ public class PlotElement {
 	      });
 	      yAxisIndicator.setIcon( r1 );
 	      variableListY.setSelectedIndx(4);
-	      
+	       } catch(Exception e) {
+	    	   
+	       }
 	       
 	       xAxisIndicator = new JButton();
 	       variableListX =  new VariableList(xAxisIndicator, "x",plotElement);
@@ -126,8 +129,9 @@ public class PlotElement {
 	       xAxisIndicator.setForeground(BlueBookPlot.getLabelColor());
 	       xAxisIndicator.setOpaque(true);
 	       xAxisIndicator.setBorderPainted(false);
-	       t1 = new TextIcon(xAxisIndicator, variableList.get(plotElement.getChartSetting().x), TextIcon.Layout.HORIZONTAL);
-	       r1 = new RotatedIcon(t1, RotatedIcon.Rotate.ABOUT_CENTER);
+	       try {
+	       TextIcon t1 = new TextIcon(xAxisIndicator, variableList.get(plotElement.getChartSetting().x), TextIcon.Layout.HORIZONTAL);
+	       RotatedIcon r1 = new RotatedIcon(t1, RotatedIcon.Rotate.ABOUT_CENTER);
 	      xAxisIndicator.addActionListener(new ActionListener() {
 
 	
@@ -138,6 +142,9 @@ public class PlotElement {
 	    	  
 	      });
 	      xAxisIndicator.setIcon( r1 );
+	       } catch (Exception e) {
+	    	   
+	       }
 
 	      xAxisIndicator.setPreferredSize(new Dimension(25,25));
 	      yAxisIndicator.setPreferredSize(new Dimension(25,25));
@@ -169,10 +176,12 @@ public class PlotElement {
 		JFreeChart chart = ChartFactory.createScatterPlot("", "", "", resultSet, PlotOrientation.VERTICAL, false, false, false); 
 		XYPlot plot = (XYPlot)chart.getXYPlot(); 
 	    XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer( );
-	    plot.setRenderer(0, renderer); 
-	    renderer.setSeriesPaint( 0 , BlueBookPlot.getLabelColor());	
-		chart.setBackgroundPaint(BlueBookPlot.getBackgroundColor());
-		Font font3 = new Font("Dialog", Font.PLAIN, 12); 	
+		Font font3 = new Font("Dialog", Font.PLAIN, 12);
+	    double size = 2.0;
+	    double delta = size / 2.0;
+		Shape dot = new Ellipse2D.Double(-delta, -delta, size, size);
+	    for(int i=0;i<100;i++) {
+	    plot.setRenderer(i, renderer);
 		plot.getDomainAxis().setLabelFont(font3);
 		plot.getRangeAxis().setLabelFont(font3);
 		plot.getRangeAxis().setLabelPaint(BlueBookPlot.getLabelColor());
@@ -181,21 +190,18 @@ public class PlotElement {
 		plot.setBackgroundPaint(BlueBookPlot.getBackgroundColor());
 		plot.setDomainGridlinePaint(BlueBookPlot.getLabelColor());
 		plot.setRangeGridlinePaint(BlueBookPlot.getLabelColor()); 
+	    renderer.setSeriesPaint( i , BlueBookPlot.getLabelColor());
+		renderer.setSeriesShape(i, dot);
+	    }
+		chart.setBackgroundPaint(BlueBookPlot.getBackgroundColor()); 	
 		//chart.getLegend().setBackgroundPaint(backgroundColor);
 		//chart.getLegend().setItemPaint(labelColor);
 		final NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
 		rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
 		//final NumberAxis domainAxis = (NumberAxis) plot.getDomainAxis();
 		//domainAxis.setInverted(true);
-
-		
 		//Shape cross = ShapeUtilities.createDiagonalCross(1, 1) ;
-	    double size = 2.0;
-	    double delta = size / 2.0;
-		Shape dot = new Ellipse2D.Double(-delta, -delta, size, size);
-		renderer.setSeriesShape(0, dot);
 
-	
 		ChartPanel chartPanel = new ChartPanel(chart);
 		chartPanel.setMaximumDrawHeight(50000);
 		chartPanel.setMaximumDrawWidth(50000);
@@ -217,9 +223,13 @@ public class PlotElement {
 	            ValueAxis xAxis = plot.getDomainAxis();
 	            double x = xAxis.java2DToValue(event.getTrigger().getX(), dataArea, 
 	                    RectangleEdge.BOTTOM);
-	            double y = DatasetUtilities.findYValue(plot.getDataset(), 0, x);
+	            try {
+	            double y = DatasetUtilities.findYValue(plot.getDataset(), 1, x);
 	            xCrosshair.setValue(x);
 	            yCrosshair.setValue(y);
+	            } catch (Exception e) {
+	            	
+	            }
 	        }
 	});
 	    CrosshairOverlay crosshairOverlay = new CrosshairOverlay();
@@ -249,51 +259,53 @@ public class PlotElement {
     	}
 }
 	
-	public XYSeriesCollection addDataSet(int x, int y, XYSeriesCollection XYSeries, List<String> variableList2) throws IOException , IIOException, FileNotFoundException, ArrayIndexOutOfBoundsException{
-			  XYSeries xyseries10 = new XYSeries("", false, true); 
-        FileInputStream fstream = null;
-		try{ fstream = new FileInputStream(resultFile);} catch(IOException eIO) { System.out.println(eIO);}
-        DataInputStream in = new DataInputStream(fstream);
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
-        String strLine;
-        try {
-	                  while ((strLine = br.readLine()) != null )   {
-				            String[] tokens = strLine.split(BlueBookPlot.getResultFileDelimiter());
-				            double xx=0; double yy=0; 
-				            if(containsIllegalCharacter(tokens[x])) {
-				            	xx = 0;
-				            	System.err.println("ERROR: Illegal character in x values detected. Value index ignored.");
-				            } else {
-				            	xx = Double.parseDouble(tokens[x]);
-				            }
-				            if(containsIllegalCharacter(tokens[y])) {
-				            	yy = 0;
-				            	System.err.println("ERROR: Illegal character in y values detected. Value index ignored.");
-				            } else {
-				            	yy = Double.parseDouble(tokens[y]);
-				            }
-				            
-				            	 @SuppressWarnings("static-access")
-								String x_axis_label = variableList2.get(variableListX.getSelectedIndx());
-				            	 boolean isangle = x_axis_label.indexOf("[deg]") !=-1? true: false;
-				            	 boolean isangle2 = x_axis_label.indexOf("[deg/s]") !=-1? true: false;
-				            	 if(isangle || isangle2) {xx = xx*rad2deg;} 
-
-				            	 @SuppressWarnings("static-access")
-								String y_axis_label = variableList2.get(variableListY.getSelectedIndx());
-				            	 boolean isangle3 = y_axis_label.indexOf("[deg]") !=-1? true: false;
-				            	 boolean isangle4 = y_axis_label.indexOf("[deg/s]") !=-1? true: false;
-				            	 if(isangle3 || isangle4) {yy = yy*rad2deg;} 
-				             
-				         	xyseries10.add(xx , yy);
-			           }
- in.close();
- XYSeries.addSeries(xyseries10); 
-        } catch (NullPointerException | NumberFormatException eNPE) { 
-      	  System.err.println("ERROR: Error occurred during file import. PlotElement>>addDataset failed.");
-      	  }
-return XYSeries;
-}
+	public XYSeriesCollection addDataSet(int x, int y, XYSeriesCollection XYSeriesCollection, List<String> variableList2) throws IOException , IIOException, FileNotFoundException, ArrayIndexOutOfBoundsException{
+	for(int i=0;i<resultFile.size();i++) {  
+					XYSeries xySeries = new XYSeries(""+i, false, true); 
+			        FileInputStream fstream = null;
+					try{ fstream = new FileInputStream(resultFile.get(i));} catch(IOException eIO) { System.out.println(eIO);}
+			        DataInputStream in = new DataInputStream(fstream);
+			        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			        String strLine;
+			        try {
+				                  while ((strLine = br.readLine()) != null )   {
+							            String[] tokens = strLine.split(BlueBookPlot.getResultFileDelimiter());
+							            double xx=0; double yy=0; 
+							            if(containsIllegalCharacter(tokens[x])) {
+							            	xx = 0;
+							            	System.err.println("ERROR: Illegal character in x values detected. Value index ignored.");
+							            } else {
+							            	xx = Double.parseDouble(tokens[x]);
+							            }
+							            if(containsIllegalCharacter(tokens[y])) {
+							            	yy = 0;
+							            	System.err.println("ERROR: Illegal character in y values detected. Value index ignored.");
+							            } else {
+							            	yy = Double.parseDouble(tokens[y]);
+							            }
+							            
+							            	 @SuppressWarnings("static-access")
+											String x_axis_label = variableList2.get(variableListX.getSelectedIndx());
+							            	 boolean isangle = x_axis_label.indexOf("[deg]") !=-1? true: false;
+							            	 boolean isangle2 = x_axis_label.indexOf("[deg/s]") !=-1? true: false;
+							            	 if(isangle || isangle2) {xx = xx*rad2deg;} 
+			
+							            	 @SuppressWarnings("static-access")
+											String y_axis_label = variableList2.get(variableListY.getSelectedIndx());
+							            	 boolean isangle3 = y_axis_label.indexOf("[deg]") !=-1? true: false;
+							            	 boolean isangle4 = y_axis_label.indexOf("[deg/s]") !=-1? true: false;
+							            	 if(isangle3 || isangle4) {yy = yy*rad2deg;} 
+							             
+							            	 xySeries.add(xx , yy);
+						           }
+			 in.close();
+			 XYSeriesCollection.addSeries(xySeries); 
+			        } catch (NullPointerException | NumberFormatException eNPE) { 
+			      	  System.err.println("ERROR: Error occurred during file import. PlotElement>>addDataset failed.");
+			      	  }
+	}
+	return XYSeriesCollection;
+	}
 
 	public ChartSetting getChartSetting() {
 		return chartSetting;
