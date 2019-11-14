@@ -102,8 +102,7 @@ public class BlueBookPlot {
         	variableList = readVariableList(System.getProperty("user.dir")+"/variableList");
 		} catch (IOException e1) {
 			System.err.println("ERROR: Variable list not recognized");
-		}
-        
+		}       
         
       	BackgroundMenuBar menuBar = new BackgroundMenuBar();
         menuBar.setColor(new Color(250,250,250));
