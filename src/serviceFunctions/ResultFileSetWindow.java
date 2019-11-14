@@ -7,6 +7,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.List;
 
@@ -20,7 +22,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
-
+import DataStructures.InputFileSet;
 import main.BlueBookPlot;
 
 
@@ -34,7 +36,11 @@ public class ResultFileSetWindow {
 	static DefaultTableModel tableModel = new DefaultTableModel();
 	static JTable table;
 	
-	public static String[] columnIdentifier = 		{"Result File"};
+    static Object[] row = new Object[3];
+	
+	public static String[] columnIdentifier = 		{"Color",
+													 "Name",
+												     "Result File Path"};
 	
     static Font small_font			  = new Font("Verdana", Font.LAYOUT_LEFT_TO_RIGHT, 10);
     public static Color bc_c = new Color(255,255,255);
@@ -61,9 +67,7 @@ public class ResultFileSetWindow {
 	    	// Insert Table to display active resultsets 
 	    	 table = new JTable(){
 			   	 
-		    	/**
-				 * 
-				 */
+		
 				private static final long serialVersionUID = 1L;
 
 				@Override
@@ -71,11 +75,17 @@ public class ResultFileSetWindow {
 		            Component comp = super.prepareRenderer(renderer, row, col);
 		           // String val_TLFC = (String) getModel().getValueAt(row, 1);
 
-
-		           // comp.setFont(table_font);
+						if(col==0) {
+							comp.setBackground(BlueBookPlot.getInputFileSet().get(row).getDataColor());
+						} else {
+							comp.setBackground(BlueBookPlot.getBackgroundColor());
+						}
+						
+		          
 		            
 		            return comp;
 		        }
+
 		    };
 		   // table.setFont(table_font);
 		    
@@ -96,18 +106,38 @@ public class ResultFileSetWindow {
 		    
 		    tableModel.setColumnIdentifiers(columnIdentifier);
 		    table.setModel(tableModel);
+		    
+	    	
 		    table.setBackground(BlueBookPlot.getBackgroundColor());
 		    table.setForeground(BlueBookPlot.getLabelColor());
 		    table.getTableHeader().setReorderingAllowed(false);
 		    table.setRowHeight(45);
 			table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-			table.getColumnModel().getColumn(0).setPreferredWidth(1200);
+			table.getColumnModel().getColumn(0).setPreferredWidth(50);
+			table.getColumnModel().getColumn(1).setPreferredWidth(70);
+			table.getColumnModel().getColumn(2).setPreferredWidth(1200);
+			
+			table.addMouseListener(new MouseAdapter() {
+				  public void mouseClicked(MouseEvent e) {
+				    if (e.getClickCount() == 1) {
+				      JTable target = (JTable)e.getSource();
+				      int row = target.getSelectedRow();
+				      int column = target.getSelectedColumn();
+				      if(column==0) {
+				    	  //System.out.println(""+row);
+							ColorChooser colorChooser = new ColorChooser();
+							colorChooser.getColorSelection(row);
+				      }
+				    }
+				  }
+				});
+			
 
 			    ((JTable) table).setFillsViewportHeight(true);
 		    
 			    table.getTableHeader().setBackground(BlueBookPlot.getBackgroundColor());
 			    table.getTableHeader().setForeground(BlueBookPlot.getLabelColor());
-			    
+
 			    
 			    JScrollPane table_ScrollPane = new JScrollPane(table,JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 			    table_ScrollPane.getVerticalScrollBar().setBackground(BlueBookPlot.getBackgroundColor());
@@ -184,12 +214,13 @@ public class ResultFileSetWindow {
 	}
 	
 	public static void UpdateTableFromResultFileList() {
-		List<String> list = BlueBookPlot.getResultFilePath();
+		List<InputFileSet> list = BlueBookPlot.getInputFileSet();
 		for(int j=table.getRowCount()-1;j>=0;j--) {tableModel.removeRow(j);}
 		
 		for(int i=0;i<list.size();i++) {
-	    Object[] row = new Object[1];
-	    	row[0] = list.get(i) ;
+			//row[0] = new ButtonElement(i).getButton();
+			row[1] = list.get(i).getInputDataFileName() ;
+	    		row[2] = list.get(i).getInputDataFilePath() ;
 	    	tableModel.addRow(row);
 		}
 		
@@ -207,15 +238,21 @@ public class ResultFileSetWindow {
     }
     
     public static void UpdateResultFileListFromTable() {
-    	List<String> list = BlueBookPlot.getResultFilePath();
+    	List<InputFileSet> list = BlueBookPlot.getInputFileSet();
     	for(int i=list.size()-1;i>=0;i--) {
     		list.remove(i);
     	}
     	for(int i=0;i<tableModel.getRowCount();i++) {
-    		String value = (String) tableModel.getValueAt(i, 0);
-    		list.add(value);
+    		//Color color = tableModel.get
+    		String name = (String) tableModel.getValueAt(i, 1);
+    		String value = (String) tableModel.getValueAt(i, 2);
+    		InputFileSet newInputFileSet = new InputFileSet();
+    		//newInputFileSet.setDataColor(color);
+    		newInputFileSet.setInputDataFileName(name);
+    		newInputFileSet.setInputDataFilePath(value);
+    		list.add(newInputFileSet);
     		}
-    BlueBookPlot.setResultFilePath(list);
+    BlueBookPlot.setInputFileSet(list);
     }
     
 	
@@ -248,4 +285,7 @@ public class ResultFileSetWindow {
             }
         });
     }
+    
 }
+
+

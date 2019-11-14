@@ -8,6 +8,7 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 
+import DataStructures.InputFileSet;
 import main.BlueBookPlot;
 
 public class PlotPanelManager {
@@ -26,8 +27,8 @@ public class PlotPanelManager {
 		this.plotNumber = plotNumber;
 	}
 	
-	public JPanel createPlotPanel(List<String> variableList, List<String> analysisFile) {
-		
+	public JPanel createPlotPanel(List<String> variableList, List<InputFileSet> analysisFile) {
+		initializePlotColor(analysisFile);
 		for(int i=0;i<4;i++) {
 			ChartSetting chartSetting = new ChartSetting();
 			chartSetting.setX(0);
@@ -49,7 +50,8 @@ public class PlotPanelManager {
 		
 	}
 	
-	private JPanel arrangePlots(JPanel plotPanel, List<String> variableList, List<String> analysisFile, int plotNumber) {
+	private JPanel arrangePlots(JPanel plotPanel, List<String> variableList, List<InputFileSet> analysisFile, int plotNumber) {
+		
 		for(int i=0;i<plotElments.size();i++) {
 			try {
 				plotElments.remove(i);
@@ -182,7 +184,7 @@ public class PlotPanelManager {
 		return plotPanel;
 	}
 	
-	public void refresh(List<String> variableList, List<String> analysisFile) {
+	public void refresh(List<String> variableList, List<InputFileSet> analysisFile) {
 		// Delete all content from Plot Panel 
 		for(int i=0;i<plotPanelContent.size();i++) {
 			try {
@@ -197,6 +199,7 @@ public class PlotPanelManager {
 			plotPanel.revalidate();
 			plotPanel.repaint();
 	}
+	
 
 	public int getPlotNumber() {
 		return plotNumber;
@@ -220,6 +223,14 @@ public class PlotPanelManager {
 
 	public void setTwoPlotTruncated(boolean isTwoPlotTruncated) {
 		this.isTwoPlotTruncated = isTwoPlotTruncated;
+	}
+	
+	
+	public List<InputFileSet> initializePlotColor(List<InputFileSet> analysisFile){
+		for(int i=0;i<analysisFile.size();i++) {
+			analysisFile.get(i).setDataColor(BlueBookPlot.getLabelColor());
+		}
+		return analysisFile;
 	}
 
 	public boolean isTwoPlotTruncated() {

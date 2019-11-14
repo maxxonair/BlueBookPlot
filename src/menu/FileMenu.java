@@ -46,7 +46,7 @@ public class FileMenu {
         menuPoint.add(itemSelectVariableList);
         itemSelectVariableList.addActionListener(new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
-                	   BlueBookPlot.selectResultFile(itemSelectVariableList);
+                	   BlueBookPlot.selectVariableList(itemSelectVariableList);
                     } });
         
 

@@ -8,6 +8,8 @@ import java.awt.Font;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
@@ -40,6 +42,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleEdge;
 
+import DataStructures.InputFileSet;
 import main.BlueBookPlot;
 
 public class PlotElement {
@@ -51,7 +54,8 @@ public class PlotElement {
     private JButton yAxisIndicator, xAxisIndicator;
     private VariableList variableListY, variableListX;
     
-    private List<String> resultFile = new ArrayList<String>(); 
+    private List<InputFileSet> resultFile = new ArrayList<InputFileSet>(); 
+
     
     private XYSeriesCollection resultSet = new XYSeriesCollection();
     
@@ -61,9 +65,11 @@ public class PlotElement {
     
     private ChartSetting chartSetting;
     
+    private int crosshairIndx = 0;
+    
     private int ID;
     
-    public PlotElement(int ID, List<String> variableList, List<String> analysisFile, ChartSetting chartSetting) {
+    public PlotElement(int ID, List<String> variableList, List<InputFileSet> analysisFile, ChartSetting chartSetting) {
     	this.variableList = variableList;
     	this.resultFile = analysisFile;
     	this.chartSetting = chartSetting; 
@@ -180,7 +186,8 @@ public class PlotElement {
 	    double size = 2.0;
 	    double delta = size / 2.0;
 		Shape dot = new Ellipse2D.Double(-delta, -delta, size, size);
-	    for(int i=0;i<100;i++) {
+		//plotColor = removeAllPlotColor(plotColor);
+	    for(int i=0;i<resultFile.size();i++) {
 	    plot.setRenderer(i, renderer);
 		plot.getDomainAxis().setLabelFont(font3);
 		plot.getRangeAxis().setLabelFont(font3);
@@ -190,12 +197,15 @@ public class PlotElement {
 		plot.setBackgroundPaint(BlueBookPlot.getBackgroundColor());
 		plot.setDomainGridlinePaint(BlueBookPlot.getLabelColor());
 		plot.setRangeGridlinePaint(BlueBookPlot.getLabelColor()); 
-	    renderer.setSeriesPaint( i , BlueBookPlot.getLabelColor());
+	    renderer.setSeriesPaint( i , resultFile.get(i).getDataColor());
 		renderer.setSeriesShape(i, dot);
 	    }
 		chart.setBackgroundPaint(BlueBookPlot.getBackgroundColor()); 	
 		//chart.getLegend().setBackgroundPaint(backgroundColor);
 		//chart.getLegend().setItemPaint(labelColor);
+		if(!resultFile.get(0).isLegend()) {
+			chart.removeLegend();
+		}
 		final NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
 		rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
 		//final NumberAxis domainAxis = (NumberAxis) plot.getDomainAxis();
@@ -207,6 +217,43 @@ public class PlotElement {
 		chartPanel.setMaximumDrawWidth(50000);
 		chartPanel.setMinimumDrawHeight(0);
 		chartPanel.setMinimumDrawWidth(0);
+		chartPanel.addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseExited(MouseEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mousePressed(MouseEvent arg0) {
+				// TODO Auto-generated method stub
+				if(arg0.getButton()==2) {
+				//System.out.println("clicked")	;
+				updateCrosshairIndx();
+				}
+				
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});
 		chartPanel.setMouseWheelEnabled(true);
 		//chartPanel.setPreferredSize(new Dimension(900, page1_plot_y));
 		chartPanel.addChartMouseListener(new ChartMouseListener() {
@@ -224,7 +271,7 @@ public class PlotElement {
 	            double x = xAxis.java2DToValue(event.getTrigger().getX(), dataArea, 
 	                    RectangleEdge.BOTTOM);
 	            try {
-	            double y = DatasetUtilities.findYValue(plot.getDataset(), 1, x);
+	            double y = DatasetUtilities.findYValue(plot.getDataset(), crosshairIndx, x);
 	            xCrosshair.setValue(x);
 	            yCrosshair.setValue(y);
 	            } catch (Exception e) {
@@ -233,9 +280,9 @@ public class PlotElement {
 	        }
 	});
 	    CrosshairOverlay crosshairOverlay = new CrosshairOverlay();
-	    xCrosshair = new Crosshair(Double.NaN, Color.RED, new BasicStroke(0f));
+	    xCrosshair = new Crosshair(Double.NaN, Color.GRAY, new BasicStroke(0f));
 	    xCrosshair.setLabelVisible(true);
-	    yCrosshair = new Crosshair(Double.NaN, Color.GRAY, new BasicStroke(0f));
+	    yCrosshair = new Crosshair(Double.NaN, Color.RED, new BasicStroke(0f));
 	    yCrosshair.setLabelVisible(true);
 	    if(BlueBookPlot.isDarkTemplate()) {
 		    xCrosshair.setLabelBackgroundPaint(BlueBookPlot.getLabelColor());
@@ -261,9 +308,9 @@ public class PlotElement {
 	
 	public XYSeriesCollection addDataSet(int x, int y, XYSeriesCollection XYSeriesCollection, List<String> variableList2) throws IOException , IIOException, FileNotFoundException, ArrayIndexOutOfBoundsException{
 	for(int i=0;i<resultFile.size();i++) {  
-					XYSeries xySeries = new XYSeries(""+i, false, true); 
+					XYSeries xySeries = new XYSeries(""+i+""+resultFile.get(i).getInputDataFileName(), false, true); 
 			        FileInputStream fstream = null;
-					try{ fstream = new FileInputStream(resultFile.get(i));} catch(IOException eIO) { System.out.println(eIO);}
+					try{ fstream = new FileInputStream(resultFile.get(i).getInputDataFilePath());} catch(IOException eIO) { System.out.println(eIO);}
 			        DataInputStream in = new DataInputStream(fstream);
 			        BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			        String strLine;
@@ -320,6 +367,14 @@ public class PlotElement {
 		return ID;
 	}
 	
+	private void updateCrosshairIndx() {
+		crosshairIndx++;
+		if(crosshairIndx>BlueBookPlot.getInputFileSet().size()-1) {
+			crosshairIndx=0;
+		}
+	}
+	
+
 	private boolean containsIllegalCharacter(String teststring) {
 		boolean result=false; 
         try {

@@ -24,7 +24,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-
+import DataStructures.InputFileSet;
 import menu.FileMenu;
 import menu.SettingMenu;
 import menu.SidePanel;
@@ -36,6 +36,8 @@ import serviceFunctions.ResultFileSetWindow;
 
 
 public class BlueBookPlot {
+	
+	private static boolean isAutoUpdate = true;
 
 	static private String PROJECT_TITLE = "  BlueBook Plotting Toolkit - Mk1";
     static private Font smallFont	= new Font("Verdana", Font.LAYOUT_LEFT_TO_RIGHT, 10);
@@ -45,7 +47,7 @@ public class BlueBookPlot {
     private static Color labelColor =  new Color(220,220,220);    
    	private static Color backgroundColor = new Color(41,41,41);
    	
-    private static List<String> resultFilePath  = new ArrayList<String>()  ;
+    private static List<InputFileSet> inputFileSet  = new ArrayList<InputFileSet>()  ;
     
     private static String resultFileListPath = System.getProperty("user.dir") + "/dataSetList" ;
     
@@ -66,7 +68,7 @@ public class BlueBookPlot {
         plotPanelManager = new PlotPanelManager(1);
 
         try {
-			resultFilePath = readResultFileList(resultFileListPath);
+			inputFileSet = readResultFileList(resultFileListPath);
 		} catch (IOException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
@@ -87,10 +89,10 @@ public class BlueBookPlot {
 				boolean status = plotPanelManager.isTwoPlotTruncated();
 				if( frame.getSize().width < frame.getSize().height && !status) {
 					plotPanelManager.setTwoPlotTruncated(true);
-					plotPanelManager.refresh(variableList, resultFilePath);	
+					plotPanelManager.refresh(variableList, inputFileSet);	
 				} else if(frame.getSize().width > frame.getSize().height && status) {
 					plotPanelManager.setTwoPlotTruncated(false);
-					plotPanelManager.refresh(variableList, resultFilePath);		
+					plotPanelManager.refresh(variableList, inputFileSet);		
 				}
 			}           
         });
@@ -115,25 +117,27 @@ public class BlueBookPlot {
         
         frame.add(SidePanel.create(), BorderLayout.WEST);
         
-        JPanel plotPanel = plotPanelManager.createPlotPanel(variableList, resultFilePath);
+        JPanel plotPanel = plotPanelManager.createPlotPanel(variableList, inputFileSet);
          frame.add(plotPanel, BorderLayout.CENTER);        
         
          // ---------------------------------------------------------------------------------
          //       Define Task (FileWatcher) Update Result Overview
     	 	// ---------------------------------------------------------------------------------
-         for(int i=0;i<resultFilePath.size();i++) {
-		    	  try {
-				FileWatcher task_Update = new FileWatcher( new File(resultFilePath.get(i)) ) {
-		    		    protected void onChange( File file ) {
-		    		    	plotPanelManager.refresh(variableList, resultFilePath);
-		    		    }
-		    		  };
-		    	  
-		     	  // repeat the check every second
-		     	   timer.schedule( task_Update , new Date(), 1000 );
-		    	  } catch (Exception e) {
-		    		  System.err.println("ERROR: FileWatcher failed.");
-		    	  }
+         if(isAutoUpdate) {
+	         for(int i=0;i<inputFileSet.size();i++) {
+			    	  try {
+					FileWatcher task_Update = new FileWatcher( new File(inputFileSet.get(i).getInputDataFilePath()) ) {
+			    		    protected void onChange( File file ) {
+			    		    	plotPanelManager.refresh(variableList, inputFileSet);
+			    		    }
+			    		  };
+			    	  
+			     	  // repeat the check every second
+			     	   timer.schedule( task_Update , new Date(), 1000 );
+			    	  } catch (Exception e) {
+			    		  System.err.println("ERROR: FileWatcher failed.");
+			    	  }
+	         }
          }
         //------------------------------------------------------------------
            setGUIColors(true);
@@ -164,8 +168,8 @@ public class BlueBookPlot {
         frame.setVisible(true);
 	}
 	
-	public static void setResultFilePath(List<String> resultFilePath) {
-		BlueBookPlot.resultFilePath = resultFilePath;
+	public static void setInputFileSet(List<InputFileSet> inputFileSet) {
+		BlueBookPlot.inputFileSet = inputFileSet;
 		writeResultFileList();
 		updateTimer();
 	}
@@ -197,14 +201,16 @@ public class BlueBookPlot {
        		File[] files = fileChooser.getSelectedFiles();
        		for(int i=0;i<files.length;i++) {
        		String path = files[i].getAbsolutePath();
-       		resultFilePath.add(path);
+       		InputFileSet newInputFileSet = new InputFileSet();
+       		newInputFileSet.setInputDataFilePath(path);
+       		inputFileSet.add(newInputFileSet);
        		}
-       		plotPanelManager.refresh(variableList, resultFilePath);
-       		ResultFileSetWindow.UpdateTableFromResultFileList();
-       		updateTimer();
+       		plotPanelManager.refresh(variableList, inputFileSet);
+       		ResultFileSetWindow.UpdateTableFromResultFileList();      		
        	}
-       	plotPanelManager.refresh(variableList, resultFilePath);
+       	plotPanelManager.refresh(variableList, inputFileSet);
        	writeResultFileList();
+       	updateTimer();
     }
     
     public static void selectVariableList(Component itemSelectVariableList) {
@@ -219,7 +225,7 @@ public class BlueBookPlot {
        		}
        		try {
 				variableList = readVariableList(variableListPath);
-	       		plotPanelManager.refresh(variableList, resultFilePath);
+	       		plotPanelManager.refresh(variableList, inputFileSet);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -246,8 +252,8 @@ public class BlueBookPlot {
      return variableList;
     }
     
-    public static List<String> readResultFileList(String filePath) throws IOException{
-    	List<String> variableList = new ArrayList<String>();
+    public static List<InputFileSet> readResultFileList(String filePath) throws IOException{
+    	List<InputFileSet> newInputFileSetList = new ArrayList<InputFileSet>();
     	try {
      	 BufferedReader br = new BufferedReader(new FileReader(filePath));
       	 String strLine;
@@ -255,37 +261,42 @@ public class BlueBookPlot {
    		      while ((strLine = br.readLine()) != null )   {
    		    	  String after = strLine.trim().replaceAll(" +", " ");
    		      	if(!after.isEmpty()) {
-   		      	variableList.add(after);
+   		      	InputFileSet newInputFileSet = new InputFileSet();
+   		      	newInputFileSet.setInputDataFilePath(after);
+   		     newInputFileSetList.add(newInputFileSet);
    		      	}
    		      }
     }catch(NullPointerException eNPE) { System.out.println(eNPE);}
     br.close();
-    if(variableList.size()==0) {
+    if(newInputFileSetList.size()==0) {
    	 System.err.println("ERROR: Variable List empty. Return 0");
     }
     	} catch (Exception e) {
     		
     	}
-    return variableList;
+    return newInputFileSetList;
     }
     
     public static void updateTimer() {
-    	timer.cancel();
-    	timer.purge();
-        for(int i=0;i<resultFilePath.size();i++) {
-		    	  try {
-				FileWatcher task_Update = new FileWatcher( new File(resultFilePath.get(i)) ) {
-		    		    protected void onChange( File file ) {
-		    		    	plotPanelManager.refresh(variableList, resultFilePath);
-		    		    }
-		    		  };
-		    	  
-		     	  // repeat the check every second
-		     	   timer.schedule( task_Update , new Date(), 1000 );
-		    	  } catch (Exception e) {
-		    		  System.err.println("ERROR: FileWatcher failed.");
-		    	  }
-        }
+	    	if(isAutoUpdate) {
+		    	timer.cancel();
+		    	timer.purge();
+		        for(int i=0;i<inputFileSet.size();i++) {
+				    	  try {
+						FileWatcher task_Update = new FileWatcher( new File(inputFileSet.get(i).getInputDataFilePath()) ) {
+				    		    protected void onChange( File file ) {
+				    		    	plotPanelManager.refresh(variableList, inputFileSet);
+				    		    }
+				    		  };
+				    	  
+				     	  // repeat the check every second
+				     	   timer.schedule( task_Update , new Date(), 1000 );
+				    	  } catch (Exception e) {
+				    		  System.err.println("ERROR: FileWatcher failed.");
+				    		  System.out.println(e);
+				    	  }
+		        }
+	    	}
     }
     
     public static void writeResultFileList() {
@@ -301,8 +312,8 @@ public class BlueBookPlot {
             }
             FileWriter wr = new FileWriter(fac);
 
-	            for(String temp : resultFilePath) {
-	            		wr.write(temp+System.getProperty( "line.separator" ));
+	            for(InputFileSet temp : inputFileSet) {
+	            		wr.write(temp.getInputDataFilePath()+System.getProperty( "line.separator" ));
 	            }
             wr.close();
             } catch (IOException eIO) {
@@ -320,7 +331,7 @@ public class BlueBookPlot {
             labelColor =  Color.BLACK;    
           	  backgroundColor = Color.white;
           }
-        plotPanelManager.refresh(variableList, resultFilePath);
+        plotPanelManager.refresh(variableList, inputFileSet);
     }
 
 	public static boolean isDarkTemplate() {
@@ -339,8 +350,8 @@ public class BlueBookPlot {
 		return plotPanelManager;
 	}
 
-	public static List<String> getResultFilePath() {
-		return resultFilePath;
+	public static List<InputFileSet> getResultFilePath() {
+		return inputFileSet;
 	}
 
 	public static List<String> getVariableList() {
@@ -353,6 +364,10 @@ public class BlueBookPlot {
 
 	public static String getResultFileDelimiter() {
 		return resultFileDelimiter;
+	}
+
+	public static List<InputFileSet> getInputFileSet() {
+		return inputFileSet;
 	}
 	
 	
