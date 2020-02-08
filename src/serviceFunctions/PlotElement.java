@@ -203,8 +203,12 @@ public class PlotElement {
 		chart.setBackgroundPaint(BlueBookPlot.getBackgroundColor()); 	
 		//chart.getLegend().setBackgroundPaint(backgroundColor);
 		//chart.getLegend().setItemPaint(labelColor);
+		try {
 		if(!resultFile.get(0).isLegend()) {
 			chart.removeLegend();
+		}
+		} catch (Exception e) {
+			System.err.println("ERROR: PlotElement/Loading Legend Failed");
 		}
 		final NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
 		rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());

@@ -27,6 +27,7 @@ public class PlotPanelManager {
 		this.plotNumber = plotNumber;
 	}
 	
+
 	public JPanel createPlotPanel(List<String> variableList, List<InputFileSet> analysisFile) {
 		initializePlotColor(analysisFile);
 		for(int i=0;i<4;i++) {

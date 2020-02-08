@@ -159,6 +159,8 @@ public class BlueBookPlot {
             System.out.println("The os does not support: 'taskbar.setIconImage'");
         } catch (final SecurityException e) {
             System.out.println("There was a security exception for: 'taskbar.setIconImage'");
+        } catch (Exception e) {
+        	
         }
 
         //set icon for windows os (and other systems which do support this method)
